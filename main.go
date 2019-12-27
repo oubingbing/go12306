@@ -34,6 +34,11 @@ type Login struct {
 	Uamtk string
 }
 
+type DeviceResult struct {
+	Exp string
+	Dfp string
+}
+
 var JSESSIONID string
 var theAnswer string
 var imageCookie map[string]string
@@ -43,22 +48,19 @@ var uamtkCookie map[string]string
 var uamtkTiket string
 var deviceId string
 
+const deviceString = "X05VHDCVI2ThoQ2S1147iuZqsMDKNo1QusC8orrnprztgmmteMoFdXNgyRSCuGJ4m0TsYn2Tpv4vXiKcDWJ2GC1gLs4zCvP_13eiaDLzRI-CBnYHGb9dIfVYFzQsGDiLoamEqOPOc29DOV1BHTBokDKuBFKqAlcA"
+
 var kyfwCookie = make(map[string]string)
 
 func main()  {
-	//uamtk()
-	login()
-	//answer := util.GetAnswer("test.png")
-	//fmt.Println(answer)
-	//uamauthclient()
-}
-
-func loginTest()  {
-
+	uamauthclient()
 }
 
 func checkCode()  {
 	answer := getAnswer()
+
+	fmt.Printf("验证码：%v\n",answer)
+
 	method := "GET"
 	data := ""
 	urlVal := "https://kyfw.12306.cn/passport/captcha/captcha-check?callback=jQuery1910028362015323499357_1577349946476&rand=sjrand&login_site=E&_=1577349946480&answer="+answer
@@ -75,12 +77,6 @@ func checkCode()  {
 	}else {
 		req, _ = http.NewRequest(method, urlVal, strings.NewReader(data))
 	}
-
-	//可以添加多个cookie
-	/*cookie1 := &http.Cookie{Name:"_passport_session",Value:imageCookie["_passport_session"]}
-	req.AddCookie(cookie1)
-	cookie2 := &http.Cookie{Name:"_passport_ct",Value:imageCookie["_passport_ct"]}
-	req.AddCookie(cookie2)*/
 
 	for k,v := range kyfwCookie  {
 		req.AddCookie(&http.Cookie{Name:k,Value:v})
@@ -102,8 +98,7 @@ func checkCode()  {
 	fmt.Println(string(b))
 }
 
-func getDeviceId() string {
-
+func getDeviceId() DeviceResult {
 	method := "GET"
 	data := ""
 	urlVal := "https://kyfw.12306.cn/otn/HttpZF/logdevice"
@@ -136,29 +131,20 @@ func getDeviceId() string {
 
 	resultString := string(b)
 
-	type DeviceResult struct {
-		Exp string
-		Dfp string
-	}
-
 	str := string(b)[18:len(resultString)-2]
 	fmt.Printf("设备ID：%v\n",str)
 
 	var deviceResult DeviceResult
 	json.Unmarshal([]byte(str),&deviceResult)
 
-	return deviceResult.Dfp
+	return deviceResult
 }
 
 func login() []byte {
 	checkCode()
-
-	getDeviceId()
-
 	answer := theAnswer
 	method  := "POST"
 	urlVal := "https://kyfw.12306.cn/passport/web/login"
-	//data := "username=234324&password=23423423&appid=otn&answer="+answer
 
 	data := url.Values{}
 	data.Set("username", "13425144866")
@@ -181,16 +167,8 @@ func login() []byte {
 	cookie1 := &http.Cookie{Name:"JSESSIONID",Value:JSESSIONID}
 	req.AddCookie(cookie1)
 
-	/*cookie2 := &http.Cookie{Name:"_passport_session",Value:imageCookie["_passport_session"]}
-	req.AddCookie(cookie2)
-	cookie3 := &http.Cookie{Name:"_passport_ct",Value:imageCookie["_passport_ct"]}
-	req.AddCookie(cookie3)
-	cookie4 := &http.Cookie{Name:"BIGipServerpassport",Value:codeCookie["BIGipServerpassport"]}
-	req.AddCookie(cookie4)*/
-	cookie5 := &http.Cookie{Name:"RAIL_DEVICEID",Value:"ePwjL4I15NZuawWW6MJOfQeulLNMNa9nJN4Nak4WKjXYdBPZ_NBHtQsxmSlxt57M5PWk11byUPPMrFY9Oi0ht1B2EXNT6HvE9ldtFCsk4EB84sh9DWXL3jtN3rft3BlSut_3RRz0VtpNG5O-mJlhjkPvFmgs4rIC"}
+	cookie5 := &http.Cookie{Name:"RAIL_DEVICEID",Value:deviceString}
 	req.AddCookie(cookie5)
-	cookie6 := &http.Cookie{Name:"RAIL_EXPIRATION",Value:"1577712470923"}
-	req.AddCookie(cookie6)
 
 	for k,v := range kyfwCookie  {
 		req.AddCookie(&http.Cookie{Name:k,Value:v})
@@ -220,7 +198,6 @@ func initSession()  {
 
 	method  := "GET"
 	urlVal := "https://kyfw.12306.cn/otn/login/init"
-
 	data := ""
 
 	client := &http.Client{}
@@ -236,12 +213,6 @@ func initSession()  {
 		req, _ = http.NewRequest(method, urlVal, strings.NewReader(data))
 	}
 
-	//可以添加多个cookie
-	/*cookie1 := &http.Cookie{Name:"_passport_session",Value:imageCookie["_passport_session"]}
-	req.AddCookie(cookie1)
-	cookie2 := &http.Cookie{Name:"_passport_ct",Value:imageCookie["_passport_ct"]}
-	req.AddCookie(cookie2)*/
-
 	resp, err := client.Do(req)
 
 	codeCookie := getCookie(resp.Cookies())
@@ -253,9 +224,7 @@ func initSession()  {
 		log.Fatal(err)
 	}
 	defer resp.Body.Close()
-	//b, _ := ioutil.ReadAll(resp.Body)
 
-	//fmt.Println(string(b))
 }
 
 func uamtk() []byte {
@@ -271,11 +240,9 @@ func uamtk() []byte {
 
 	method  := "POST"
 	urlVal := "https://kyfw.12306.cn/passport/web/auth/uamtk"
-	//data := "username=234324&password=23423423&appid=otn&answer="+answer
 
 	data := url.Values{}
 	data.Set("appid", "otn")
-	//data.Set("uamtk", uamtkTiket)
 
 	client := &http.Client{}
 	req, createErr := http.NewRequest(method, urlVal,  strings.NewReader(data.Encode()))
@@ -289,33 +256,16 @@ func uamtk() []byte {
 	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36")
 
-	//可以添加多个cookie
-	/*cookie1 := &http.Cookie{Name:"JSESSIONID",Value:JSESSIONID}
-	req.AddCookie(cookie1)*/
-
-	/*cookie2 := &http.Cookie{Name:"_passport_session",Value:imageCookie["_passport_session"]}
-	req.AddCookie(cookie2)
-	cookie3 := &http.Cookie{Name:"_passport_ct",Value:loginCookie["_passport_ct"]}
-	req.AddCookie(cookie3)
-	cookie4 := &http.Cookie{Name:"BIGipServerpassport",Value:loginCookie["BIGipServerpassport"]}
-	req.AddCookie(cookie4)*/
-	cookie5 := &http.Cookie{Name:"RAIL_DEVICEID",Value:"X05VHDCVI2ThoQ2S1147iuZqsMDKNo1QusC8orrnprztgmmteMoFdXNgyRSCuGJ4m0TsYn2Tpv4vXiKcDWJ2GC1gLs4zCvP_13eiaDLzRI-CBnYHGb9dIfVYFzQsGDiLoamEqOPOc29DOV1BHTBokDKuBFKqAlcA"}
+	cookie5 := &http.Cookie{Name:"RAIL_DEVICEID",Value:deviceString}
 	req.AddCookie(cookie5)
 
 	for k,v := range kyfwCookie  {
 		req.AddCookie(&http.Cookie{Name:k,Value:v})
 	}
 
-	/*cookie6 := &http.Cookie{Name:"uamtk",Value:uamtkCookie["uamtk"]}
-	req.AddCookie(cookie6)*/
-
 	resp, err := client.Do(req)
 
-	fmt.Println(resp.Cookies())
-
 	uamtkCookie = getCookie(resp.Cookies())
-	fmt.Printf("uamtk:%v\n",uamtkCookie)
-
 	for k,v := range uamtkCookie  {
 		kyfwCookie[k] = v
 	}
@@ -325,8 +275,6 @@ func uamtk() []byte {
 	}
 	defer resp.Body.Close()
 	b, _ := ioutil.ReadAll(resp.Body)
-
-	fmt.Printf("第三步：%v\n",string(b))
 
 	return b
 }
@@ -339,20 +287,11 @@ func uamauthclient()  {
 		fmt.Printf("错误：%v\n",err)
 	}
 
-	fmt.Println("分界线")
-	fmt.Println("uamtkCookie:",uamtk.Newapptk)
-
-	fmt.Println(uamtk.Newapptk)
-
 	method  := "POST"
 	urlVal := "https://kyfw.12306.cn/otn/uamauthclient"
-	//data := "username=234324&password=23423423&appid=otn&answer="+answer
-
-	fmt.Printf("tk是啥:%v\n",uamtk.Newapptk)
 
 	data := url.Values{}
 	data.Set("tk",uamtk.Newapptk)
-	//data.Set("uamtk",uamtkTiket)
 
 	client := &http.Client{}
 	req, createErr := http.NewRequest(method, urlVal,  strings.NewReader(data.Encode()))
@@ -366,33 +305,14 @@ func uamauthclient()  {
 	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36")
 
-	//可以添加多个cookie
-
-	/*cookie2 := &http.Cookie{Name:"_passport_session",Value:imageCookie["_passport_session"]}
-	req.AddCookie(cookie2)
-	cookie3 := &http.Cookie{Name:"_passport_ct",Value:loginCookie["_passport_ct"]}
-	req.AddCookie(cookie3)
-	cookie4 := &http.Cookie{Name:"BIGipServerpassport",Value:loginCookie["BIGipServerpassport"]}
-	req.AddCookie(cookie4)*/
-	cookie5 := &http.Cookie{Name:"RAIL_DEVICEID",Value:"X05VHDCVI2ThoQ2S1147iuZqsMDKNo1QusC8orrnprztgmmteMoFdXNgyRSCuGJ4m0TsYn2Tpv4vXiKcDWJ2GC1gLs4zCvP_13eiaDLzRI-CBnYHGb9dIfVYFzQsGDiLoamEqOPOc29DOV1BHTBokDKuBFKqAlcA"}
+	cookie5 := &http.Cookie{Name:"RAIL_DEVICEID",Value:deviceString}
 	req.AddCookie(cookie5)
 
 	for k,v := range kyfwCookie  {
 		req.AddCookie(&http.Cookie{Name:k,Value:v})
 	}
 
-
-	/*cookie6 := &http.Cookie{Name:"tk",Value:uamtk.Newapptk}
-	req.AddCookie(cookie6)
-	cookie7 := &http.Cookie{Name:"uamtk",Value:uamtkTiket}
-	req.AddCookie(cookie7)*/
-
-	fmt.Printf("uamtk：%v\n",uamtkCookie["uamtk"])
-
 	resp, err := client.Do(req)
-
-	fmt.Printf("最后一步：%v\n",resp.Cookies())
-
 	uamtkCookie = getCookie(resp.Cookies())
 
 	if err != nil {
@@ -406,10 +326,7 @@ func uamauthclient()  {
 
 
 func getAnswer() string {
-
 	initSession()
-
-	//jeCookie := getJSESSIONIDCookie()
 	var imageResult ImageResult
 	image := getBase64Image(kyfwCookie["JSESSIONID"])
 	JSESSIONID = kyfwCookie["JSESSIONID"]
@@ -418,7 +335,6 @@ func getAnswer() string {
 	answer := util.GetAnswer(imageName)
 
 	theAnswer = answer
-
 	return answer
 }
 
@@ -449,7 +365,6 @@ func getBase64Image(cookie string) []byte {
 	imageCookie = getCookie(resp.Cookies())
 
 	for k,v := range imageCookie  {
-		//fmt.Printf("键：%v\n,值:%v\n",k,v)
 		if len(k) > 0 && len(v) > 0 {
 			kyfwCookie[k] = v
 		}
@@ -464,7 +379,7 @@ func getBase64Image(cookie string) []byte {
 	return b
 }
 
-/*func getJSESSIONIDCookie() map[string]string  {
+func getJSESSIONIDCookie() map[string]string  {
 	response,err := http.Get("https://kyfw.12306.cn/otn/login/init")
 	if err != nil{
 		fmt.Printf("错误 %v\n",err.Error())
@@ -474,7 +389,7 @@ func getBase64Image(cookie string) []byte {
 	defer response.Body.Close()
 
 	return getCookie(ck)
-}*/
+}
 
 func getCookie(ck []*http.Cookie) map[string]string {
 	cookies := make(map[string]string)
