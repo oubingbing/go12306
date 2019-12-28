@@ -69,8 +69,6 @@ func (h HttpClient) Post(urlVal string,data url.Values,beforeHandle beforeReques
 		log.Fatal(err)
 	}
 
-	fmt.Println(req)
-
 	if afterHandle != nil{
 		afterHandle(resp)
 	}

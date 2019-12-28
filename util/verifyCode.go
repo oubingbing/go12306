@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -30,6 +31,8 @@ func GetAnswer(imgPath string) string {
 	if err != nil {
 		log.Printf("error: %v\n", err)
 	}
+
+	fmt.Printf("验证码识别结果：%v\n\n",out)
 
 	ret := strings.Split(out,";")
 	keys := ret[0]

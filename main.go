@@ -6,42 +6,37 @@ import (
 )
 
 func main()  {
-	var kyfw util.Kyfw
+	/*var kyfw util.Kyfw
+	kyfw.GetAnswer("test.jpg")
+	fmt.Println(kyfw.Answer)*/
+
+	var kyfw *util.Kyfw
 	var err error
-	kyfw.Cookies = map[string]string{}
-	err = kyfw.InitLogin()
-	if err != nil {
+
+	kyfw,err = util.AuthKyf()
+	if err != nil{
 		fmt.Println(err.Error())
 	}
 
-	var imageData string
-	imageData,err = kyfw.GetBase64Image()
-	if err != nil {
+	var order util.Order
+	order.KyfwPrt = kyfw
+	order.CheckUser()
+
+	err = order.QueryTicket("G6248")
+	if err != nil{
 		fmt.Println(err.Error())
 	}
+	fmt.Println(order.Secret)
 
-	var image string
-	image,err = util.SaveImage(imageData)
-	kyfw.GetAnswer(image)
-	fmt.Println(kyfw.Answer)
+	order.SubmitOrderRequest()
 
-	err = kyfw.CheckCode()
-	if err != nil {
-		fmt.Println(err)
-	}
+	order.InitDc()
 
-	err = kyfw.Login()
-	if err != nil {
-		fmt.Println(err)
-	}
+	order.GetPassengerDTOs()
 
-	err = kyfw.Uamtk()
-	if err != nil {
-		fmt.Println(err)
-	}
+	order.CheckOrderInfo()
 
-	err = kyfw.Uamauthclient()
-	if err != nil {
-		fmt.Println(err)
-	}
+	order.GetQueueCount()
+
+	order.ConfirmSingleForQueue()
 }

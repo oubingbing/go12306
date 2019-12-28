@@ -21,6 +21,7 @@ type Kyfw struct {
 	Answer string
 	Cookies KyfwCookies
 	Tk string
+	Apptk string
 }
 
 type ImageResponse struct {
@@ -36,7 +37,14 @@ type UamtkResult struct {
 	Newapptk string
 }
 
-const deviceString = "X05VHDCVI2ThoQ2S1147iuZqsMDKNo1QusC8orrnprztgmmteMoFdXNgyRSCuGJ4m0TsYn2Tpv4vXiKcDWJ2GC1gLs4zCvP_13eiaDLzRI-CBnYHGb9dIfVYFzQsGDiLoamEqOPOc29DOV1BHTBokDKuBFKqAlcA"
+type UamauthclientResult struct {
+	ResultCode int
+	ResultMessage string
+	Username string
+	Apptk string
+}
+
+const deviceString = "sjS6RaEGJjQmJOWSO5A8nV2fo6WrK88QEWkHZx2gGNqNErqCBWzkF48eUr6VgJ_93wSprwyQiuEIA4hyi-pL_uCseDHRC3fe2k9ruVo78NVj_iXOh4lsEGUenhndx8nY_yayxq7QBRgnwFPBKH2XSQiynmqV7SEj"
 
 /**
  * 初始化登录信息
@@ -52,6 +60,52 @@ func (kyfw *Kyfw) InitLogin() error {
 	})
 
 	return  err
+}
+
+/**
+ * 12306权限校验
+ */
+func AuthKyf() (*Kyfw,error) {
+	var kyfw Kyfw
+	var err error
+	kyfw.Cookies = map[string]string{}
+	err = kyfw.InitLogin()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	var imageData string
+	imageData,err = kyfw.GetBase64Image()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	var image string
+	image,err = SaveImage(imageData)
+	kyfw.GetAnswer(image)
+	fmt.Println(kyfw.Answer)
+
+	err = kyfw.CheckCode()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = kyfw.Login()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = kyfw.Uamtk()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = kyfw.Uamauthclient()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return &kyfw,err
 }
 
 /**
@@ -83,7 +137,12 @@ func (kyfw *Kyfw) Uamauthclient() error  {
 		}
 
 		var b []byte
+		var result UamauthclientResult
 		b, err = ioutil.ReadAll(resp.Body)
+		json.Unmarshal(b,&result)
+
+		kyfw.Apptk = result.Apptk
+
 		fmt.Printf("Uamauthclient：%v\n",string(b))
 	})
 
@@ -141,7 +200,7 @@ func (kyfw *Kyfw) Login() error {
 	var client HttpClient
 	var err error
 
-	kyfw.Username = "13425144866"
+	kyfw.Username = ""
 	kyfw.Password = ""
 	urlVal = "https://kyfw.12306.cn/passport/web/login"
 
