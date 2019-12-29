@@ -9,7 +9,7 @@ func main()  {
 	var kyfw *util.Kyfw
 	var err error
 
-	kyfw,err = util.AuthKyf()
+	kyfw,err = util.AuthKyf("13425144866","guangbaolian925455")
 	if err != nil{
 		fmt.Println(err.Error())
 	}
@@ -80,7 +80,7 @@ func main()  {
 		order.CheckOrderInfo()
 	}
 
-	order.GetQueueCount()
+	/*order.GetQueueCount()
 
-	order.ConfirmSingleForQueue()
+	order.ConfirmSingleForQueue()*/
 }

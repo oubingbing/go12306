@@ -44,7 +44,7 @@ type UamauthclientResult struct {
 	Apptk string
 }
 
-const deviceString = "sjS6RaEGJjQmJOWSO5A8nV2fo6WrK88QEWkHZx2gGNqNErqCBWzkF48eUr6VgJ_93wSprwyQiuEIA4hyi-pL_uCseDHRC3fe2k9ruVo78NVj_iXOh4lsEGUenhndx8nY_yayxq7QBRgnwFPBKH2XSQiynmqV7SEj"
+const deviceString = "FZLxI6EceUJoR9kv_jEDvw-8b2J1pxMPpZn-9HvvcVTN0CisRRZx0BbK2uAoxVCisOwATMemue8bob-g1paegEyRmclwdymgT7kFFV-Wh7MI1LtGvbuYvglmuk66i3l8_z1brEaJsEFzrb5BPltxI_xHiQECyE8m"
 
 /**
  * 初始化登录信息
@@ -65,9 +65,13 @@ func (kyfw *Kyfw) InitLogin() error {
 /**
  * 12306权限校验
  */
-func AuthKyf() (*Kyfw,error) {
+func AuthKyf(username,password string) (*Kyfw,error) {
 	var kyfw Kyfw
 	var err error
+
+	kyfw.Username = username
+	kyfw.Password = password
+
 	kyfw.Cookies = map[string]string{}
 	err = kyfw.InitLogin()
 	if err != nil {
@@ -200,8 +204,6 @@ func (kyfw *Kyfw) Login() error {
 	var client HttpClient
 	var err error
 
-	kyfw.Username = ""
-	kyfw.Password = ""
 	urlVal = "https://kyfw.12306.cn/passport/web/login"
 
 	data := url.Values{}
