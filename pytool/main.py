@@ -27,11 +27,11 @@ def main(fn):
     imgs = preprocess_input(imgs)
 
     # 识别文字
-    model = models.load_model(os.getcwd()+'/easy12306/model.h5')
+    model = models.load_model(os.getcwd()+'/pytool/model.h5')
     label = model.predict(text)
     label = label.argmax()
     wordStr = ''
-    fp = open(os.getcwd()+'/easy12306/texts.txt', encoding='utf-8')
+    fp = open(os.getcwd()+'/pytool/texts.txt', encoding='utf-8')
     texts = [text.rstrip('\n') for text in fp]
     text = texts[label]
     wordStr += text
@@ -53,7 +53,7 @@ def main(fn):
         #print("word-"+text)
 
     # 加载图片分类器
-    model = models.load_model(os.getcwd()+'/easy12306/12306.image.model.h5')
+    model = models.load_model(os.getcwd()+'/pytool/12306.image.model.h5')
     labels = model.predict(imgs)
     labels = labels.argmax(axis=1)
     arr = []

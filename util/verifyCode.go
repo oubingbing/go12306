@@ -27,7 +27,7 @@ func execCommand(com string,arg ...string) (error, string, string) {
  */
 func GetAnswer(imgPath string) string {
 	dir, _ := os.Getwd()
-	err, out, _ := execCommand("python",dir+"/easy12306/main.py",dir+"/upload/image/"+imgPath)
+	err, out, _ := execCommand("python",dir+"/pytool/main.py",dir+"/upload/image/"+imgPath)
 	if err != nil {
 		log.Printf("error: %v\n", err)
 	}
