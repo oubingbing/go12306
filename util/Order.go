@@ -51,6 +51,15 @@ type GetPassengerResult struct {
 	ValidateMessagesShowId string
 }
 
+type SubmitOrderRequestResult struct {
+	Data string
+	Httpstatus int
+	Messages []string
+	Status bool
+	ValidateMessages interface{}
+	ValidateMessagesShowId string
+}
+
 type PassengerData struct {
 	Dj_passengers []map[string]string
 	ExMsg string
@@ -76,6 +85,7 @@ type OrderCommonResponse struct {
 	Httpstatus int
 	Messages []string
 	ValidateMessages interface{}
+	Data map[string]interface{}
 }
 
 /**
@@ -115,7 +125,7 @@ func (order *Order) CheckUser()  {
 /**
  * 发起下单请求
  */
-func (order *Order) SubmitOrderRequest()  {
+func (order *Order) SubmitOrderRequest() error {
 	var urlVal string
 	var client HttpClient
 	var err error
@@ -131,7 +141,7 @@ func (order *Order) SubmitOrderRequest()  {
 	data.Set("query_from_station_name",order.TicketForm.FromStation[1])
 	data.Set("query_to_station_name",order.TicketForm.ToStation[1])
 
-	err = client.Post(urlVal,data, func(req *http.Request) {
+	httpErr := client.Post(urlVal,data, func(req *http.Request) {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
 		req.Header.Set("Origin", "https://exservice.12306.cn")
 		req.Header.Set("Referer", "https://kyfw.12306.cn/otn/leftTicket/init")
@@ -147,9 +157,23 @@ func (order *Order) SubmitOrderRequest()  {
 		}
 
 		var b []byte
+		var submitOrderRequestResult SubmitOrderRequestResult
 		b, err = ioutil.ReadAll(resp.Body)
-		fmt.Printf("发起提交订单请求：%v\n",string(b))
+		err = json.Unmarshal(b,&submitOrderRequestResult)
+		if err != nil{
+			fmt.Println(submitOrderRequestResult.Httpstatus)
+			fmt.Printf("发起提交订单请求失败：%v\n",err.Error())
+		}else{
+			fmt.Printf("发起提交订单请求成功：%v\n",string(b))
+		}
+
 	})
+
+	if httpErr != nil{
+		err = httpErr
+	}
+
+	return err
 }
 
 /**
@@ -162,7 +186,7 @@ func (order *Order) QueryTicket() error {
 
 	urlVal := "https://kyfw.12306.cn/otn/leftTicket/queryZ"+order.TicketForm.String()
 	var client HttpClient
-	err = client.Get(urlVal, func(req *http.Request) {
+	httpErr := client.Get(urlVal, func(req *http.Request) {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
 		req.Header.Set("User-Agent", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9")
@@ -181,9 +205,9 @@ func (order *Order) QueryTicket() error {
 		b, _ := ioutil.ReadAll(resp.Body)
 
 		var result QueryTicketResult
-		jsonerr := json.Unmarshal(b,&result)
-		if jsonerr != nil{
-			fmt.Printf("查询车票json解析错误:%v\n",jsonerr)
+		err = json.Unmarshal(b,&result)
+		if err != nil{
+			fmt.Printf("查询车票json解析错误:%v\n",err)
 		}
 
 		var secretStr string
@@ -212,6 +236,10 @@ func (order *Order) QueryTicket() error {
 		return errors.New("当前车次不存在")
 	}
 
+	if httpErr != nil{
+		err = httpErr
+	}
+
 	return err
 }
 
@@ -229,7 +257,7 @@ func (order *Order) GetPassengerDTOs() error {
 	data.Set("_json_att","")
 	data.Set("REPEAT_SUBMIT_TOKEN",order.RepeatSubmitToken) //可在该页面中获取https://kyfw.12306.cn/otn/confirmPassenger/initDc
 
-	err = client.Post(urlVal,data, func(req *http.Request) {
+	httpErr := client.Post(urlVal,data, func(req *http.Request) {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
 		req.Header.Set("Origin", "https://exservice.12306.cn")
 		req.Header.Set("Referer", "https://kyfw.12306.cn/otn/confirmPassenger/initDc")
@@ -248,14 +276,23 @@ func (order *Order) GetPassengerDTOs() error {
 		b, err = ioutil.ReadAll(resp.Body)
 
 		var passengerInfo GetPassengerResult
-		jsonerr := json.Unmarshal(b,&passengerInfo)
-		if jsonerr != nil{
-			fmt.Printf("解析乘客josn出错，请重新尝试，错误信息：%v\n",jsonerr.Error())
+		err = json.Unmarshal(b,&passengerInfo)
+		if err != nil{
+			fmt.Printf("解析乘客josn出错，请重新尝试，错误信息：%v\n",err.Error())
 		}else{
-			order.PassengerInfo = &passengerInfo
-			fmt.Println("获取乘客信息成功",string(len(b)))
+			if passengerInfo.Data.ExMsg != "" {
+				err = errors.New(passengerInfo.Data.ExMsg)
+			}else{
+				order.PassengerInfo = &passengerInfo
+				fmt.Println("获取乘客信息成功")
+			}
 		}
+
 	})
+
+	if httpErr != nil{
+		err = httpErr
+	}
 
 	return err
 }
@@ -344,7 +381,7 @@ func (order *Order) CheckOrderInfo() error {
 	data.Set("_json_att","nc_login")
 	data.Set("REPEAT_SUBMIT_TOKEN",order.RepeatSubmitToken)
 
-	err = client.Post(urlVal,data, func(req *http.Request) {
+	httpErr := client.Post(urlVal,data, func(req *http.Request) {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
 		req.Header.Set("Origin", "https://exservice.12306.cn")
 		req.Header.Set("Referer", "https://kyfw.12306.cn/otn/confirmPassenger/initDc")
@@ -371,6 +408,10 @@ func (order *Order) CheckOrderInfo() error {
 		}
 
 	})
+
+	if httpErr != nil {
+		err = httpErr
+	}
 
 	return err
 }
@@ -403,7 +444,7 @@ func (order *Order) GetQueueCount() error {
 
 	fmt.Printf("提交的数据：%v\n",data)
 
-	err = client.Post(urlVal,data, func(req *http.Request) {
+	httpErr := client.Post(urlVal,data, func(req *http.Request) {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
 		req.Header.Set("Origin", "https://exservice.12306.cn")
 		req.Header.Set("Referer", "https://kyfw.12306.cn/otn/confirmPassenger/initDc")
@@ -424,6 +465,10 @@ func (order *Order) GetQueueCount() error {
 		fmt.Printf("查询排队数：%v\n",string(b))
 	})
 
+	if httpErr != nil{
+		err = httpErr
+	}
+
 	return err
 }
 
@@ -434,6 +479,8 @@ func (order *Order) ConfirmSingleForQueue() error {
 	var urlVal string
 	var client HttpClient
 	var err error
+
+	fmt.Println()
 
 	urlVal = "https://kyfw.12306.cn/otn/confirmPassenger/confirmSingleForQueue"
 
@@ -463,7 +510,7 @@ func (order *Order) ConfirmSingleForQueue() error {
 	data.Set("_json_att","")
 	data.Set("REPEAT_SUBMIT_TOKEN",order.RepeatSubmitToken)
 
-	err = client.Post(urlVal,data, func(req *http.Request) {
+	httpErr := client.Post(urlVal,data, func(req *http.Request) {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
 		req.Header.Set("Origin", "https://exservice.12306.cn")
 		req.Header.Set("Referer", "https://kyfw.12306.cn/otn/confirmPassenger/initDc")
@@ -481,8 +528,23 @@ func (order *Order) ConfirmSingleForQueue() error {
 		var b []byte
 		b, err = ioutil.ReadAll(resp.Body)
 
-		fmt.Printf("订单提交结果：%v\n",string(b))
+		var commonResponse OrderCommonResponse
+		err = json.Unmarshal(b,&commonResponse)
+		if err != nil {
+			fmt.Printf("提交订单错误：%v\n",string(len(b)))
+		}else{
+			if commonResponse.Status == false{
+				err = errors.New("下单失败")
+			}else{
+				fmt.Printf("下单成功:%v\n",string(b))
+			}
+		}
+
 	})
+
+	if httpErr != nil{
+		err = httpErr
+	}
 
 	return err
 }

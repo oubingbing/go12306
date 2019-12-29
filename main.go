@@ -3,13 +3,33 @@ package main
 import (
 	"easy/util"
 	"fmt"
+	"time"
 )
 
 func main()  {
 	var kyfw *util.Kyfw
 	var err error
 
-	kyfw,err = util.AuthKyf("13425144866","guangbaolian925455")
+	fmt.Println("准备抢票")
+
+	getTicketTime := "2019-12-29 21:25:59"//开始抢票时间
+	format := "2006-01-02 15:04:05"
+	getTicketTimeFormat, _ := time.Parse(format, getTicketTime)
+	now,_ := time.Parse(format,time.Now().Format(format))
+
+	//判断是否可以抢票
+	standby := true
+	for standby  {
+		if now.After(getTicketTimeFormat) {
+			standby = false
+			break
+		}else{
+			time.Sleep(time.Millisecond * 500)
+			fmt.Println("等待抢票...")
+		}
+	}
+
+	kyfw,err = util.AuthKyf("","")
 	if err != nil{
 		fmt.Println(err.Error())
 	}
@@ -28,59 +48,97 @@ func main()  {
 	var queryTicketForm util.QueryTicketForm
 	queryTicketForm.FromStation 	= fromStation
 	queryTicketForm.ToStation 		= toStation
-	queryTicketForm.TrainDate 		= "2020-01-05"
+	queryTicketForm.TrainDate 		= "2020-01-07"
 	queryTicketForm.PurposeCodes 	= "ADULT"
-	queryTicketForm.TrainNo 		= "C7027"
+	queryTicketForm.TrainNo 		= "C7067"
 	queryTicketForm.PassengerName 	= "区志彬"
 
 	order.TicketForm = &queryTicketForm
 
 	//获取车票信息，尝试五次
-	queryTickeTry := 3
-	for i:=0;i<queryTickeTry;i++  {
-		err = order.QueryTicket()
-		if err != nil{
-			fmt.Println(err.Error())
-		}else{
-			fmt.Println(order.Secret)
+	getTicketTry := 5
+	var getTicketErr error
+	var getTicketResult bool = false
+	for i:=0;i<getTicketTry;i++  {
+		getTicketErr = order.QueryTicket()
+		if getTicketErr == nil{
+			getTicketResult = true
+			break
+		}
+	}
+	if !getTicketResult {
+		fmt.Println("下单失败,获取车票信息失败")
+		return
+	}
+
+	submitOrderRequestTry := 5
+	var submitOrderRequestErr error
+	var submitOrderRequestResult bool = false
+	for i:=0;i<submitOrderRequestTry;i++  {
+		submitOrderRequestErr = order.SubmitOrderRequest()
+		if submitOrderRequestErr == nil{
+			submitOrderRequestResult = true
 			break
 		}
 	}
 
-	if len(order.Secret) <= 0{
-		fmt.Println("获取车票失败")
+	if !submitOrderRequestResult{
+		fmt.Println("下单失败,发起订单请求失败")
 		return
 	}
-
-	order.SubmitOrderRequest()
 
 	order.InitDc()
 
 	//获取车票信息，尝试五次
-	etPassengerDTOTry := 3
+	etPassengerDTOTry := 5
+	var getPassengerDTOsErr error
+	var getPassengerDTOsResult bool = false
 	for i:=0;i<etPassengerDTOTry;i++  {
-		err = order.GetPassengerDTOs()
-		if err != nil{
-			fmt.Println(err.Error())
-		}else{
-			order.GetPassengerDTOs()
+		getPassengerDTOsErr = order.GetPassengerDTOs()
+		if getPassengerDTOsErr == nil{
+			getPassengerDTOsResult = true
 			break
 		}
 	}
 
+	if !getPassengerDTOsResult {
+		fmt.Println("下单失败,获取乘客信息失败")
+		return
+	}
 
-	if len(order.Secret) <= 0{
-		fmt.Println("获取乘客信息失败")
+	checkOrderTry := 5
+	var checkOrderInfoErr error
+	checkOrderInfoResult := false
+	for i:=0;i<checkOrderTry;i++  {
+		checkOrderInfoErr = order.CheckOrderInfo()
+		if checkOrderInfoErr == nil{
+			checkOrderInfoResult = true
+			break
+		}
+	}
+
+	if !checkOrderInfoResult {
+		fmt.Println("下单失败,检测订单失败")
 		return
 	}
 
 
-	err = order.CheckOrderInfo()
-	if err != nil{
-		order.CheckOrderInfo()
+	order.GetQueueCount()
+
+	submitOrderTry := 5
+	var submitOrderErr error
+	submitOrderfoResult := false
+	for i:=0;i<submitOrderTry;i++  {
+		submitOrderErr = order.ConfirmSingleForQueue()
+		if submitOrderErr == nil{
+			submitOrderfoResult = true
+			break
+		}
 	}
 
-	/*order.GetQueueCount()
-
-	order.ConfirmSingleForQueue()*/
+	if !submitOrderfoResult {
+		fmt.Println("下单失败")
+	}else{
+		fmt.Println("下单成功")
+	}
 }

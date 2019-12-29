@@ -9,6 +9,10 @@ import (
 	"newbug/util"
 )
 
+func Answer(ctx *gin.Context)  {
+
+}
+
 func SavedeviceId(ctx *gin.Context)  {
 	token := ctx.PostForm("token")
 	var device model.DeviceInfo
