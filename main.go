@@ -3,17 +3,59 @@ package main
 import (
 	"easy/util"
 	"fmt"
+	"sync"
 	"time"
 )
 
 func main()  {
-	var kyfw *util.Kyfw
-	var err error
+	passenger := "区志彬"
+	username := ""
+	password := ""
+	date := "2020-01-02"
+	fromStation := "茂名"
+	toStation := "广州南"
 
-	fmt.Println("准备抢票")
-
-	//getTicketTime := "2019-12-29 21:40:59"//开始抢票时间
+	//getTicketTime := "2019-12-30 21:23:23"//开始抢票时间
 	getTicketTime := ""//开始抢票时间
+	wait(getTicketTime)
+
+	kyfw := login(username,password)
+
+	trainSlice := []string{"D7172"}
+	dotime := len(trainSlice)
+
+	var wg sync.WaitGroup
+	chn := make(chan int,dotime)
+	wg.Add(dotime)
+
+	for i:=0; i<dotime;i++  {
+		trainNo := trainSlice[i]
+		var queryTicketForm util.QueryTicketForm
+		queryTicketForm.TrainDate 		= date
+		queryTicketForm.PurposeCodes 	= "ADULT"
+		queryTicketForm.TrainNo 		= trainNo
+		queryTicketForm.PassengerName 	= passenger
+		go order(chn,&wg,kyfw,&queryTicketForm,fromStation,toStation)
+	}
+
+	go done(chn,&wg)
+
+	for c := range chn {
+		fmt.Println(c)
+	}
+
+	fmt.Println("结束")
+}
+
+func done(chn chan int,group *sync.WaitGroup)  {
+	group.Wait()
+	close(chn)
+}
+
+func wait(getTicketTime string)  {
+	//getTicketTime := ""//开始抢票时间
+
+	fmt.Println(">>> 等待抢票...")
 
 	if getTicketTime != ""{
 		format := "2006-01-02 15:04:05"
@@ -29,36 +71,41 @@ func main()  {
 				break
 			}else{
 				time.Sleep(time.Millisecond * 500)
-				fmt.Println("等待抢票...")
 			}
 		}
 	}
+}
 
-	kyfw,err = util.AuthKyf("","")
+func login(username,password string) *util.Kyfw {
+	var kyfw *util.Kyfw
+	var err error
+
+	kyfw,err = util.AuthKyf(username,password)
 	if err != nil{
 		fmt.Println(err.Error())
 	}
 
+	return kyfw
+}
+
+func order(chn chan int,wg *sync.WaitGroup,kyfw *util.Kyfw,queryTicketForm *util.QueryTicketForm,from string,to string)  {
 	var order util.Order
 	order.KyfwPrt = kyfw
+
 	order.CheckUser()
 
 	//需要确认站点是否存在
-	fromStation,toStation,stationErr := order.GetStation("广州东","深圳")
+	fromStation,toStation,stationErr := order.GetStation(from,to)
 	if stationErr != nil{
 		fmt.Println(stationErr)
 	}
-	fmt.Printf("获取站点结果：%v,%v\n",fromStation,toStation)
+	fmt.Printf(">>> 获取站点结果：%v,%v\n",fromStation,toStation)
 
-	var queryTicketForm util.QueryTicketForm
+	//var queryTicketForm util.QueryTicketForm
 	queryTicketForm.FromStation 	= fromStation
 	queryTicketForm.ToStation 		= toStation
-	queryTicketForm.TrainDate 		= "2020-01-07"
-	queryTicketForm.PurposeCodes 	= "ADULT"
-	queryTicketForm.TrainNo 		= "C7003"
-	queryTicketForm.PassengerName 	= "区志彬"
 
-	order.TicketForm = &queryTicketForm
+	order.TicketForm = queryTicketForm
 
 	//获取车票信息，尝试五次
 	getTicketTry := 5
@@ -72,7 +119,7 @@ func main()  {
 		}
 	}
 	if !getTicketResult {
-		fmt.Println("下单失败,获取车票信息失败")
+		fmt.Println(">>> 下单失败,获取车票信息失败")
 		return
 	}
 
@@ -88,7 +135,7 @@ func main()  {
 	}
 
 	if !submitOrderRequestResult{
-		fmt.Println("下单失败,发起订单请求失败")
+		fmt.Println(">>> 下单失败,发起订单请求失败")
 		return
 	}
 
@@ -107,7 +154,7 @@ func main()  {
 	}
 
 	if !getPassengerDTOsResult {
-		fmt.Println("下单失败,获取乘客信息失败")
+		fmt.Println(">>> 下单失败,获取乘客信息失败")
 		return
 	}
 
@@ -123,14 +170,11 @@ func main()  {
 	}
 
 	if !checkOrderInfoResult {
-		fmt.Println("下单失败,检测订单失败")
+		fmt.Println(">>> 下单失败,检测订单失败")
 		return
 	}
 
-
 	order.GetQueueCount()
-
-	return
 
 	submitOrderTry := 5
 	var submitOrderErr error
@@ -144,8 +188,15 @@ func main()  {
 	}
 
 	if !submitOrderfoResult {
-		fmt.Println("下单失败")
+		fmt.Println(">>> 下单失败")
 	}else{
-		fmt.Println("下单成功")
+		fmt.Println(">>> 下单成功")
 	}
+
+	fmt.Printf("抢票结束：%v\n",queryTicketForm.TrainNo)
+
+	defer func() {
+		chn <- 1
+		wg.Done()
+	}()
 }

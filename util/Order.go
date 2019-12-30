@@ -329,12 +329,14 @@ func (order *Order) InitDc() error {
 		//key_check_isChange
 		keyCheckIsChangeName := "key_check_isChange':'"
 		keyCheckIsChangeIndex := strings.Index(str,keyCheckIsChangeName)
-		keyCheckIsChangeNextIndex := strings.Index(str,"','leftDetails")
-		keyCheckIsChangeToken := str[keyCheckIsChangeIndex+(len(keyCheckIsChangeName)):keyCheckIsChangeNextIndex]
-		order.KeyCheckIsChangeToken = keyCheckIsChangeToken
+		if keyCheckIsChangeIndex > 100 {
+			keyCheckIsChangeNextIndex := strings.Index(str,"','leftDetails")
+			keyCheckIsChangeToken := str[keyCheckIsChangeIndex+(len(keyCheckIsChangeName)):keyCheckIsChangeNextIndex]
+			order.KeyCheckIsChangeToken = keyCheckIsChangeToken
 
-		fmt.Printf("生成订单页面的token：%v\n", tokenStr[1])
-		fmt.Printf("排序token：%v\n",keyCheckIsChangeToken)
+			fmt.Printf("生成订单页面的token：%v\n", tokenStr[1])
+			fmt.Printf("排序token：%v\n",keyCheckIsChangeToken)
+		}
 	})
 
 	return err
@@ -433,7 +435,7 @@ func (order *Order) GetQueueCount() error {
 	data.Set("train_date",trainDateString)
 	data.Set("train_no",order.TargetTrainInfo[2])
 	data.Set("stationTrainCode",order.TargetTrainInfo[3])
-	data.Set("seatType","0")
+	data.Set("seatType","WZ")
 	data.Set("fromStationTelecode",order.TicketForm.FromStation[2])
 	data.Set("toStationTelecode",order.TicketForm.ToStation[2])
 	data.Set("leftTicket",order.LeftTicket)
@@ -531,12 +533,15 @@ func (order *Order) ConfirmSingleForQueue() error {
 		var commonResponse OrderCommonResponse
 		err = json.Unmarshal(b,&commonResponse)
 		if err != nil {
-			fmt.Printf("提交订单错误：%v\n",string(len(b)))
+			fmt.Printf(">>> 提交订单错误：%v\n",string(len(b)))
 		}else{
 			if commonResponse.Status == false{
-				err = errors.New("下单失败")
+				err = errors.New(">>> 订单提交失败")
+			}else if commonResponse.Data["submitStatus"] == true {
+				fmt.Printf(">>> 下单成功:%v\n",string(b))
 			}else{
-				fmt.Printf("下单成功:%v\n",string(b))
+				fmt.Printf(">>> 订单提交错误:%v\n",commonResponse.Data["errMsg"])
+				err = errors.New(">>> 订单提交失败")
 			}
 		}
 
