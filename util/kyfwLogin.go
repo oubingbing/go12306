@@ -44,7 +44,7 @@ type UamauthclientResult struct {
 	Apptk string
 }
 
-const deviceString = "sjS6RaEGJjQmJOWSO5A8nV2fo6WrK88QEWkHZx2gGNqNErqCBWzkF48eUr6VgJ_93wSprwyQiuEIA4hyi-pL_uCseDHRC3fe2k9ruVo78NVj_iXOh4lsEGUenhndx8nY_yayxq7QBRgnwFPBKH2XSQiynmqV7SEj"
+const deviceString = "qZX8GDIZx33yTEa4eHdsqdZFIXp79p9ahICZFxqpAtlsPhjt0ftJurxSxPEL1WXO6UhAcDbC8Ugn5uIsFMncZ-R0CwcrVQ1h_qkWX2oAYUDIGl_pvGTBIfil6ivcFct12PmYVGsRPBG2_13DSraVEj56ihIBr1y5"
 
 /**
  * 初始化登录信息

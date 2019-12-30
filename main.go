@@ -12,21 +12,25 @@ func main()  {
 
 	fmt.Println("准备抢票")
 
-	getTicketTime := "2019-12-29 21:40:59"//开始抢票时间
-	format := "2006-01-02 15:04:05"
-	getTicketTimeFormat, _ := time.Parse(format, getTicketTime)
+	//getTicketTime := "2019-12-29 21:40:59"//开始抢票时间
+	getTicketTime := ""//开始抢票时间
 
-	//判断是否可以抢票
-	var now time.Time
-	standby := true
-	for standby  {
-		now,_ = time.Parse(format,time.Now().Format(format))
-		if now.After(getTicketTimeFormat) {
-			standby = false
-			break
-		}else{
-			time.Sleep(time.Millisecond * 500)
-			fmt.Println("等待抢票...")
+	if getTicketTime != ""{
+		format := "2006-01-02 15:04:05"
+		getTicketTimeFormat, _ := time.Parse(format, getTicketTime)
+
+		//判断是否可以抢票
+		var now time.Time
+		standby := true
+		for standby  {
+			now,_ = time.Parse(format,time.Now().Format(format))
+			if now.After(getTicketTimeFormat) {
+				standby = false
+				break
+			}else{
+				time.Sleep(time.Millisecond * 500)
+				fmt.Println("等待抢票...")
+			}
 		}
 	}
 
@@ -51,7 +55,7 @@ func main()  {
 	queryTicketForm.ToStation 		= toStation
 	queryTicketForm.TrainDate 		= "2020-01-07"
 	queryTicketForm.PurposeCodes 	= "ADULT"
-	queryTicketForm.TrainNo 		= "C7067"
+	queryTicketForm.TrainNo 		= "C7003"
 	queryTicketForm.PassengerName 	= "区志彬"
 
 	order.TicketForm = &queryTicketForm
@@ -125,6 +129,8 @@ func main()  {
 
 
 	order.GetQueueCount()
+
+	return
 
 	submitOrderTry := 5
 	var submitOrderErr error
