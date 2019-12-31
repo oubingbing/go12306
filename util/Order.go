@@ -435,7 +435,7 @@ func (order *Order) GetQueueCount() error {
 	data.Set("train_date",trainDateString)
 	data.Set("train_no",order.TargetTrainInfo[2])
 	data.Set("stationTrainCode",order.TargetTrainInfo[3])
-	data.Set("seatType","WZ")
+	data.Set("seatType","o")
 	data.Set("fromStationTelecode",order.TicketForm.FromStation[2])
 	data.Set("toStationTelecode",order.TicketForm.ToStation[2])
 	data.Set("leftTicket",order.LeftTicket)

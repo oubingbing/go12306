@@ -11,17 +11,17 @@ func main()  {
 	passenger := "区志彬"
 	username := ""
 	password := ""
-	date := "2020-01-02"
-	fromStation := "茂名"
+	date := "2020-01-29"
+	fromStation := "怀化南"
 	toStation := "广州南"
 
-	//getTicketTime := "2019-12-30 21:23:23"//开始抢票时间
-	getTicketTime := ""//开始抢票时间
+	getTicketTime := "2019-12-31 17:29:50"//开始抢票时间
+	//getTicketTime := ""//开始抢票时间
 	wait(getTicketTime)
 
 	kyfw := login(username,password)
 
-	trainSlice := []string{"D7172"}
+	trainSlice := []string{"G6166","G6175","G6173","G6141","G16166"}
 	dotime := len(trainSlice)
 
 	var wg sync.WaitGroup
