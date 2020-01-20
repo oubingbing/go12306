@@ -8,20 +8,19 @@ import (
 )
 
 func main()  {
-	passenger := "区志彬"
-	username := ""
-	password := ""
-	date := "2020-01-29"
-	fromStation := "怀化南"
-	toStation := "广州南"
+	passenger := "区志彬"					//1、购票乘客
+	username := ""							//2、登录账号密码
+	password := ""							//3、登录秘密
+	date := "2020-01-29"					//4、乘车日期
+	fromStation := "怀化南"					//5、始发站
+	toStation := "广州南"					//6、终点站
+	getTicketTime := "2019-12-31 17:29:50"	//7、开始抢票时间
 
-	getTicketTime := "2019-12-31 17:29:50"//开始抢票时间
-	//getTicketTime := ""//开始抢票时间
 	wait(getTicketTime)
 
 	kyfw := login(username,password)
 
-	trainSlice := []string{"G6166","G6175","G6173","G6141","G16166"}
+	trainSlice := []string{"G6166","G6175","G6173","G6141","G16166"}	//8、购买的车次，可以多选，支持并发
 	dotime := len(trainSlice)
 
 	var wg sync.WaitGroup
@@ -52,8 +51,10 @@ func done(chn chan int,group *sync.WaitGroup)  {
 	close(chn)
 }
 
+/**
+ * 定时抢票
+ */
 func wait(getTicketTime string)  {
-	//getTicketTime := ""//开始抢票时间
 
 	fmt.Println(">>> 等待抢票...")
 
@@ -76,6 +77,9 @@ func wait(getTicketTime string)  {
 	}
 }
 
+/**
+ * 登录12306
+ */
 func login(username,password string) *util.Kyfw {
 	var kyfw *util.Kyfw
 	var err error
@@ -88,6 +92,9 @@ func login(username,password string) *util.Kyfw {
 	return kyfw
 }
 
+/**
+ * 进行下单操作
+ */
 func order(chn chan int,wg *sync.WaitGroup,kyfw *util.Kyfw,queryTicketForm *util.QueryTicketForm,from string,to string)  {
 	var order util.Order
 	order.KyfwPrt = kyfw
